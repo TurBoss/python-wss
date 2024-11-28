@@ -10,6 +10,39 @@ You still need to create your own ssl certs and keys.  You can follow this guide
 create a locally signed cert/key combo: 
 
 https://tripzero.io/general/secure-websocket-server-using-autobahn-and-trollius-asyncio/
+from archive.org
+
+```
+Websockets are a pretty useful way of passing information to and from clients.  But how do you make them secure?  I’m documenting how I’m figuring it out as I go.  Let’s get started.
+
+First, let’s get a simple autobahn server and client up and running.  This is straight from the asyncio example on github.  Running it with python server.py and python client.py respectively.
+
+To make things secure, first we need to create some keys and certificates.  I am creating a self-signed certificate and key for both the server and the test client:
+
+    openssl genrsa -des3 -out server.key 2048
+    openssl rsa -in server.key -out server.key
+    openssl req -sha256 -new -key server.key -out server.csr -subj '/CN=localhost'
+    openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
+
+Next we need to add a few lines to our server and client.  For the server add:
+
+    sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    sslcontext.load_cert_chain(‘server.crt’, “server.key”)
+
+and when we create the server, we will pass in the context.  Find the “loop.create_server” line and change it to:
+
+    coro = loop.create_server(factory, ‘0.0.0.0’, 9000, ssl=sslcontext)
+
+The client is almost identical:
+
+    sslcontext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    sslcontext.load_cert_chain(‘client.crt’, “client.key”)
+    coro = loop.create_connection(factory, ‘127.0.0.1’, 9000, ssl=sslcontext)
+
+That’s it!
+```
+
+
 
 You can also use letsencrypt.org to create cert/keys.
 
